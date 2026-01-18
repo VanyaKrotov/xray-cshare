@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version: "1.25"
@@ -19,19 +20,45 @@ jobs:
       - name: Install compilers
         run: |
           sudo apt update
-          sudo apt install -y mingw-w64 gcc-aarch64-linux-gnu
+          sudo apt install -y \
+            mingw-w64 \
+            gcc-aarch64-linux-gnu
+
+      # =====================
+      # Linux
+      # =====================
 
       - name: Build Linux amd64
         run: |
           mkdir -p dist/linux_amd64
           CGO_ENABLED=1 GOOS=linux GOARCH=amd64 CC=gcc \
-          go build -buildmode=c-shared -o dist/linux_amd64/xray_cshare.so
+          go build -buildmode=c-shared \
+          -o dist/linux_amd64/xray_cshare.so
+
+      - name: Build Linux arm64
+        run: |
+          mkdir -p dist/linux_arm64
+          CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc \
+          go build -buildmode=c-shared \
+          -o dist/linux_arm64/xray_cshare.so
+
+      # =====================
+      # Windows
+      # =====================
 
       - name: Build Windows amd64
         run: |
           mkdir -p dist/windows_amd64
           CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc \
-          go build -buildmode=c-shared -o dist/windows_amd64/xray_cshare.dll
+          go build -buildmode=c-shared \
+          -o dist/windows_amd64/xray_cshare.dll
+
+      - name: Build Windows arm64
+        run: |
+          mkdir -p dist/windows_arm64
+          CGO_ENABLED=1 GOOS=windows GOARCH=arm64 CC=aarch64-w64-mingw32-gcc \
+          go build -buildmode=c-shared \
+          -o dist/windows_arm64/xray_cshare.dll
 
       - uses: actions/upload-artifact@v4
         with:
@@ -42,30 +69,47 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version: "1.25"
 
+      # =====================
+      # macOS arm64
+      # =====================
       - name: Build macOS arm64
         run: |
+          mkdir -p dist/darwin_arm64
           CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 CC=clang \
-          go build -buildmode=c-shared -o arm64.dylib
+          go build -buildmode=c-shared \
+          -o dist/darwin_arm64/xray_cshare.dylib
 
+      # =====================
+      # macOS amd64
+      # =====================
       - name: Build macOS amd64
         run: |
+          mkdir -p dist/darwin_amd64
           CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 CC=clang \
-          go build -buildmode=c-shared -o amd64.dylib
+          go build -buildmode=c-shared \
+          -o dist/darwin_amd64/xray_cshare.dylib
 
+      # =====================
+      # Universal (fat)
+      # =====================
       - name: Create universal dylib
         run: |
           mkdir -p dist/darwin_universal
-          lipo -create arm64.dylib amd64.dylib \
+          lipo -create \
+            dist/darwin_arm64/xray_cshare.dylib \
+            dist/darwin_amd64/xray_cshare.dylib \
             -output dist/darwin_universal/xray_cshare.dylib
 
       - uses: actions/upload-artifact@v4
         with:
           name: cshared-macos
           path: dist/
+
 
   release:
     runs-on: ubuntu-latest
