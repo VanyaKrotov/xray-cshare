@@ -53,12 +53,12 @@ jobs:
           go build -buildmode=c-shared \
           -o dist/windows_amd64/xray_cshare.dll
 
-      - name: Build Windows arm64
-        run: |
-          mkdir -p dist/windows_arm64
-          CGO_ENABLED=1 GOOS=windows GOARCH=arm64 CC=aarch64-w64-mingw32-gcc \
-          go build -buildmode=c-shared \
-          -o dist/windows_arm64/xray_cshare.dll
+      # - name: Build Windows arm64
+      #   run: |
+      #     mkdir -p dist/windows_arm64
+      #     CGO_ENABLED=1 GOOS=windows GOARCH=arm64 CC=aarch64-w64-mingw32-gcc \
+      #     go build -buildmode=c-shared \
+      #     -o dist/windows_arm64/xray_cshare.dll
 
       - uses: actions/upload-artifact@v4
         with:
