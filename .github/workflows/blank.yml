@@ -30,14 +30,13 @@ jobs:
 
       - name: Build Linux amd64
         run: |
-          mkdir dist/
+          mkdir -p dist
           CGO_ENABLED=1 GOOS=linux GOARCH=amd64 CC=gcc \
           go build -buildmode=c-shared -trimpath -ldflags "-s -w -buildid=" \
           -o dist/linux_amd64.so
 
       - name: Build Linux arm64
         run: |
-          mkdir dist/
           CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc \
           go build -buildmode=c-shared -trimpath -ldflags "-s -w -buildid=" \
           -o dist/linux_arm64.so
@@ -48,7 +47,6 @@ jobs:
 
       - name: Build Windows amd64
         run: |
-          mkdir dist/
           CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc \
           go build -buildmode=c-shared -trimpath -ldflags "-s -w -buildid=" \
           -o dist/windows_amd64.dll
@@ -59,10 +57,10 @@ jobs:
       #     go build -buildmode=c-shared -trimpath -ldflags "-s -w -buildid=" \
       #     -o dist/windows_arm64.dll
 
-      # - uses: actions/upload-artifact@v4
-      #   with:
-      #     name: cshared-linux-windows
-      #     path: dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cshared-linux-windows
+          path: dist/
 
   macos:
     runs-on: macos-latest
@@ -78,7 +76,7 @@ jobs:
       # =====================
       - name: Build macOS arm64
         run: |
-          mkdir dist/
+          mkdir -p dist
           CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 CC=clang \
           go build -buildmode=c-shared -trimpath -ldflags "-s -w -buildid=" \
           -o dist/darwin_arm64.dylib
@@ -88,7 +86,6 @@ jobs:
       # =====================
       - name: Build macOS amd64
         run: |
-          mkdir dist/
           CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 CC=clang \
           go build -buildmode=c-shared -trimpath -ldflags "-s -w -buildid=" \
           -o dist/darwin_amd64.dylib
@@ -103,10 +100,10 @@ jobs:
             dist/darwin_amd64.dylib \
             -output dist/darwin_universal.dylib
 
-      # - uses: actions/upload-artifact@v4
-      #   with:
-      #     name: cshared-macos
-      #     path: dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cshared-macos
+          path: dist/
 
 
   release:
