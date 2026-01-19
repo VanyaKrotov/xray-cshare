@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"runtime/debug"
 
-	"github.com/VanyaKrotov/xray_cshare/transfer"
+	code_errors "github.com/VanyaKrotov/xray_cshare/errors"
 
 	_ "github.com/xtls/xray-core/app/proxyman/inbound"
 	_ "github.com/xtls/xray-core/app/proxyman/outbound"
@@ -24,32 +24,33 @@ const (
 	XrayAlreadyStarted int = 5
 )
 
-func Start(jsonConfig string) (*core.Instance, *transfer.Response) {
+// Start xray server from json config
+func Start(jsonConfig string) (*core.Instance, *code_errors.CodeError) {
 	var cfg iconf.Config
 	if err := json.Unmarshal([]byte(jsonConfig), &cfg); err != nil {
-		return nil, transfer.New(JsonParseError, err.Error())
+		return nil, code_errors.New(err.Error(), JsonParseError)
 	}
 
 	coreCfg, err := cfg.Build()
 	if err != nil {
-		return nil, transfer.New(LoadConfigError, err.Error())
+		return nil, code_errors.New(err.Error(), LoadConfigError)
 	}
 
 	instance, err := core.New(coreCfg)
 	if err != nil {
 		log.Printf("Xray init error: %v", err)
 
-		return nil, transfer.New(InitXrayError, err.Error())
+		return nil, code_errors.New(err.Error(), InitXrayError)
 	}
 
 	if err := instance.Start(); err != nil {
 		instance.Close()
 		log.Printf("Xray start error: %v", err)
 
-		return nil, transfer.New(StartXrayError, err.Error())
+		return nil, code_errors.New(err.Error(), StartXrayError)
 	}
 
-	return instance, transfer.Success("Server started")
+	return instance, nil
 }
 
 func Stop(instance *core.Instance) {

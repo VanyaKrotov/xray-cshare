@@ -7,12 +7,26 @@ type Response struct {
 	Message string
 }
 
-func New(code int, message string) *Response {
+func Failure(message string, codes ...int) *Response {
+	var code int = 1
+	if len(codes) > 0 {
+		code = codes[0]
+	}
+
 	return &Response{Code: code, Message: message}
 }
 
+func FailureString(message string, codes ...int) string {
+
+	return Failure(message, codes...).ToString()
+}
+
 func Success(message string) *Response {
-	return New(0, message)
+	return &Response{Code: 0, Message: message}
+}
+
+func SuccessString(message string) string {
+	return Success(message).ToString()
 }
 
 func (r Response) ToString() string {

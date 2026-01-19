@@ -4,30 +4,33 @@ import (
 	"crypto/mlkem"
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
+	"errors"
 
-	"github.com/VanyaKrotov/xray_cshare/transfer"
 	"lukechampine.com/blake3"
 )
 
-func ExecuteMLKEM768(input_mlkem768 string) *transfer.Response {
+// Generate key pair for ML-KEM-768 post-quantum key exchange (VLESS Encryption).
+// Input: seed in base64.RawURLEncoding;
+func ExecuteMLKEM768(input_mlkem768 string) (*MLKEM768, error) {
 	var seed [64]byte
 	if len(input_mlkem768) > 0 {
 		s, _ := base64.RawURLEncoding.DecodeString(input_mlkem768)
 		if len(s) != 64 {
-			return transfer.New(1, "Invalid length of ML-KEM-768 seed.")
+			return nil, errors.New("Invalid length of ML-KEM-768 seed.")
 		}
 
 		seed = [64]byte(s)
 	} else {
 		rand.Read(seed[:])
 	}
+
 	seed, client, hash32 := genMLKEM768(&seed)
 
-	// Seed: %v
-	// Client: %v
-	// Hash32: %v
-	return transfer.Success(fmt.Sprintf("%v|%v|%v", base64.RawURLEncoding.EncodeToString(seed[:]), base64.RawURLEncoding.EncodeToString(client), base64.RawURLEncoding.EncodeToString(hash32[:])))
+	return &MLKEM768{
+		Seed:   base64.RawURLEncoding.EncodeToString(seed[:]),
+		Client: base64.RawURLEncoding.EncodeToString(client),
+		Hash32: base64.RawURLEncoding.EncodeToString(hash32[:]),
+	}, nil
 }
 
 func genMLKEM768(inputSeed *[64]byte) (seed [64]byte, client []byte, hash32 [32]byte) {
@@ -42,4 +45,10 @@ func genMLKEM768(inputSeed *[64]byte) (seed [64]byte, client []byte, hash32 [32]
 	hash32 = blake3.Sum256(client)
 
 	return seed, client, hash32
+}
+
+type MLKEM768 struct {
+	Seed   string
+	Client string
+	Hash32 string
 }

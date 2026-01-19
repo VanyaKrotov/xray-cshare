@@ -1,27 +1,26 @@
 package crypto_helpers
 
 import (
-	"github.com/VanyaKrotov/xray_cshare/transfer"
+	"errors"
+
 	"github.com/xtls/xray-core/common/uuid"
 )
 
-const (
-	UuidInputOverflow int = 1010
-)
-
-func ExecuteUUID(input string) *transfer.Response {
+// Generate UUIDv4 or UUIDv5 (VLESS).
+// Input: initial word (30 bytes); Returns: UUIDv4 (random)
+func ExecuteUUID(input string) (string, error) {
 	l := len(input)
 	if l == 0 {
 		u := uuid.New()
 
-		return transfer.Success(u.String())
+		return u.String(), nil
 	}
 
 	if l <= 30 {
 		u, _ := uuid.ParseString(input)
 
-		return transfer.Success(u.String())
+		return u.String(), nil
 	}
 
-	return transfer.New(UuidInputOverflow, "Input must be within 30 bytes.")
+	return "", errors.New("Input must be within 30 bytes.")
 }

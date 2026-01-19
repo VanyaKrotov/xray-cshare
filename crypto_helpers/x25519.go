@@ -4,32 +4,28 @@ import (
 	"crypto/ecdh"
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
+	"errors"
 
-	"github.com/VanyaKrotov/xray_cshare/transfer"
 	"lukechampine.com/blake3"
 )
 
-const (
-	InvalidPrivateKeyLength int = 1001
-	GenerateCurve25519Error int = 1002
-)
-
-func Curve25519Genkey(input_base64 string, enc *base64.Encoding) *transfer.Response {
+// Generate key pair for X25519 key exchange (REALITY, VLESS Encryption).
+// Input: private key (base64.RawURLEncoding)
+func Curve25519Genkey(input_base64 string, enc *base64.Encoding) (*C25519Key, error) {
 	var privateKey []byte
 	if len(input_base64) > 0 {
 		privateKey, _ = enc.DecodeString(input_base64)
 		if len(privateKey) != 32 {
-			return transfer.New(InvalidPrivateKeyLength, "Invalid length of X25519 private key.")
+			return nil, errors.New("Invalid length of X25519 private key.")
 		}
 	}
 
 	privateKey, password, hash32, err := genCurve25519(privateKey)
 	if err != nil {
-		return transfer.New(GenerateCurve25519Error, err.Error())
+		return nil, err
 	}
 
-	return transfer.Success(fmt.Sprintf("%v|%v|%v", enc.EncodeToString(privateKey), enc.EncodeToString(password), enc.EncodeToString(hash32[:])))
+	return &C25519Key{PrivateKey: enc.EncodeToString(privateKey), Password: enc.EncodeToString(password), Hash32: enc.EncodeToString(hash32[:])}, nil
 
 }
 
@@ -60,4 +56,10 @@ func genCurve25519(inputPrivateKey []byte) (privateKey []byte, password []byte, 
 	hash32 = blake3.Sum256(password)
 
 	return
+}
+
+type C25519Key struct {
+	PrivateKey string
+	Password   string
+	Hash32     string
 }

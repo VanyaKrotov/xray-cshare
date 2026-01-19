@@ -3,22 +3,19 @@ package crypto_helpers
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
+	"errors"
 
-	"github.com/VanyaKrotov/xray_cshare/transfer"
 	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
 )
 
-const (
-	MLDSA65OverflowInputLength int = 1021
-)
-
-func ExecuteMLDSA65(input string) *transfer.Response {
+// Generate key pair for ML-DSA-65 post-quantum signature (REALITY).
+// Input: seed in base64.RawURLEncoding; Returns: {Seed|Verify}
+func ExecuteMLDSA65(input string) (*MLDSA65, error) {
 	var seed [32]byte
 	if len(input) > 0 {
 		s, _ := base64.RawURLEncoding.DecodeString(input)
 		if len(s) != 32 {
-			return transfer.New(MLDSA65OverflowInputLength, "Invalid length of ML-DSA-65 seed.")
+			return nil, errors.New("Invalid length of ML-DSA-65 seed.")
 		}
 
 		seed = [32]byte(s)
@@ -28,5 +25,13 @@ func ExecuteMLDSA65(input string) *transfer.Response {
 
 	pub, _ := mldsa65.NewKeyFromSeed(&seed)
 
-	return transfer.Success(fmt.Sprintf("%v|%v", base64.RawURLEncoding.EncodeToString(seed[:]), base64.RawURLEncoding.EncodeToString(pub.Bytes())))
+	return &MLDSA65{
+		Seed:   base64.RawURLEncoding.EncodeToString(seed[:]),
+		Verify: base64.RawURLEncoding.EncodeToString(pub.Bytes()),
+	}, nil
+}
+
+type MLDSA65 struct {
+	Seed   string
+	Verify string
 }
