@@ -107,7 +107,7 @@ func ExecuteUUID(cInput *C.char) *C.char {
 		return C.CString(transfer.FailureString(err.Error()))
 	}
 
-	return C.CString(uuid)
+	return C.CString(transfer.Success(uuid).ToString())
 }
 
 //export ExecuteMLDSA65
