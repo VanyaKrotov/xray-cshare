@@ -4,7 +4,7 @@ go 1.25.6
 
 require (
 	github.com/cloudflare/circl v1.6.1
-	github.com/xtls/xray-core v1.251201.0
+	github.com/xtls/xray-core v1.251208.0
 	lukechampine.com/blake3 v1.4.1
 )
 
