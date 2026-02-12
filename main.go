@@ -30,7 +30,7 @@ func Start(cUuid *C.char, cJson *C.char) *C.char {
 	defer mu.Unlock()
 
 	uuid := C.GoString(cUuid)
-	if _, ok := instances[uuid]; ok {
+	if instance, ok := instances[uuid]; ok && instance.IsRunning() {
 		return C.CString(transfer.FailureString("Xray server already started", xray.XrayAlreadyStarted))
 	}
 
@@ -65,7 +65,7 @@ func IsStarted(cUuid *C.char) C.int {
 	defer mu.Unlock()
 
 	uuid := C.GoString(cUuid)
-	if instance, ok := instances[uuid]; ok || !instance.IsRunning() {
+	if instance, ok := instances[uuid]; !ok || !instance.IsRunning() {
 		return 0
 	}
 
