@@ -4,6 +4,7 @@ import "C"
 import (
 	"encoding/base64"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -82,7 +83,7 @@ func PingConfig(jsonConfig *C.char, port int, testingURL *C.char) *C.char {
 		return C.CString(transfer.FailureString(err.Error()))
 	}
 
-	return C.CString(transfer.SuccessString(fmt.Sprintf("timeout:%d", ping)))
+	return C.CString(transfer.SuccessString(strconv.Itoa(ping)))
 }
 
 //export Ping
@@ -93,7 +94,7 @@ func Ping(port C.int, testingURL *C.char) *C.char {
 		return C.CString(transfer.FailureString(err.Error()))
 	}
 
-	return C.CString(transfer.SuccessString(fmt.Sprintf("timeout:%d", ping)))
+	return C.CString(transfer.SuccessString(strconv.Itoa(ping)))
 }
 
 //export GetXrayCoreVersion
