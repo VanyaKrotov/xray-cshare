@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/VanyaKrotov/xray_cshare/crypto_helpers"
+	"github.com/VanyaKrotov/xray_cshare/testing"
 	"github.com/VanyaKrotov/xray_cshare/transfer"
 	"github.com/VanyaKrotov/xray_cshare/xray"
 
@@ -70,6 +71,29 @@ func IsStarted(cUuid *C.char) C.int {
 	}
 
 	return 1
+}
+
+//export PingConfig
+func PingConfig(jsonConfig *C.char, port int, testingURL *C.char) *C.char {
+	goJSON := C.GoString(jsonConfig)
+	url := C.GoString(testingURL)
+	ping, err := testing.PingConfig(goJSON, port, url)
+	if err != nil {
+		return C.CString(transfer.FailureString(err.Error()))
+	}
+
+	return C.CString(transfer.SuccessString(fmt.Sprintf("timeout:%d", ping)))
+}
+
+//export Ping
+func Ping(port C.int, testingURL *C.char) *C.char {
+	url := C.GoString(testingURL)
+	ping, err := testing.Ping(int(port), url)
+	if err != nil {
+		return C.CString(transfer.FailureString(err.Error()))
+	}
+
+	return C.CString(transfer.SuccessString(fmt.Sprintf("timeout:%d", ping)))
 }
 
 //export GetXrayCoreVersion
