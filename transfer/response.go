@@ -57,7 +57,7 @@ func (r Response) Pack() unsafe.Pointer {
 		return nil
 	}
 
-	buffer := (*[1 << 6]byte)(ptr)[:totalSize:totalSize]
+	buffer := unsafe.Slice((*byte)(ptr), totalSize)
 
 	// 1. Write code (4 byte)
 	binary.LittleEndian.PutUint32(buffer[0:4], uint32(r.Code))
