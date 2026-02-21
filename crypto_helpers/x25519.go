@@ -59,7 +59,7 @@ func genCurve25519(inputPrivateKey []byte) (privateKey []byte, password []byte, 
 }
 
 type C25519Key struct {
-	PrivateKey string
-	Password   string
-	Hash32     string
+	PrivateKey string `json:"private_key"`
+	Password   string `json:"password"`
+	Hash32     string `json:"hash32"`
 }

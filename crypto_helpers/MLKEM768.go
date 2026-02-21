@@ -48,7 +48,7 @@ func genMLKEM768(inputSeed *[64]byte) (seed [64]byte, client []byte, hash32 [32]
 }
 
 type MLKEM768 struct {
-	Seed   string
-	Client string
-	Hash32 string
+	Seed   string `json:"seed"`
+	Client string `json:"client"`
+	Hash32 string `json:"hash32"`
 }

@@ -6,7 +6,7 @@ import (
 )
 
 // Generate decryption/encryption json pair (VLESS Encryption).
-func ExecuteVLESSEnc() *VLessEnc {
+func ExecuteVLESSEnc() VLessEnc {
 	privateKey, password, _, _ := genCurve25519(nil)
 	serverKey := base64.RawURLEncoding.EncodeToString(privateKey)
 	clientKey := base64.RawURLEncoding.EncodeToString(password)
@@ -19,7 +19,7 @@ func ExecuteVLESSEnc() *VLessEnc {
 	decryptionPQ := generateDotConfig("mlkem768x25519plus", "native", "600s", serverKeyPQ)
 	encryptionPQ := generateDotConfig("mlkem768x25519plus", "native", "0rtt", clientKeyPQ)
 
-	return &VLessEnc{Decryption: decryption, Encryption: encryption, EncryptionPQ: encryptionPQ, DecryptionPQ: decryptionPQ}
+	return VLessEnc{Decryption: decryption, Encryption: encryption, EncryptionPQ: encryptionPQ, DecryptionPQ: decryptionPQ}
 }
 
 func generateDotConfig(fields ...string) string {
@@ -28,11 +28,11 @@ func generateDotConfig(fields ...string) string {
 
 type VLessEnc struct {
 	// Authentication: X25519, not Post-Quantum decryption
-	Decryption string
+	Decryption string `json:"decryption"`
 	// Authentication: X25519, not Post-Quantum encryption
-	Encryption string
+	Encryption string `json:"encryption"`
 	// Authentication: ML-KEM-768, Post-Quantum decryption
-	DecryptionPQ string
+	DecryptionPQ string `json:"decryption_pq"`
 	// Authentication: ML-KEM-768, Post-Quantum encryption
-	EncryptionPQ string
+	EncryptionPQ string `json:"encryption_pq"`
 }

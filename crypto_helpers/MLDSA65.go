@@ -32,6 +32,6 @@ func ExecuteMLDSA65(input string) (*MLDSA65, error) {
 }
 
 type MLDSA65 struct {
-	Seed   string
-	Verify string
+	Seed   string `json:"seed"`
+	Verify string `json:"verify"`
 }

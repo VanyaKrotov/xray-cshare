@@ -68,8 +68,8 @@ func (opt *GenCertOptions) initDefaults() {
 }
 
 type Cert struct {
-	Certificate []string
-	Key         []string
+	Certificate []string `json:"certificate"`
+	Key         []string `json:"key"`
 }
 
 type stringList []string

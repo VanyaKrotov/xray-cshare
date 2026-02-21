@@ -12,30 +12,44 @@ import (
 )
 
 const (
-	PingTimeoutError int = 6
-	PingError        int = 7
+	PingTimeoutError uint = 6
+	PingError        uint = 7
 
 	_localhost string = "http://127.0.0.1:"
 )
 
-func PingConfig(jsonConfig string, port int, testingURL string) (int, error) {
+type PingResult struct {
+	Port    int    `json:"port"`
+	Timeout int    `json:"timeout"`
+	Error   string `json:"error"`
+}
+
+func PingConfig(jsonConfig string, ports []int, testingURL string) ([]PingResult, error) {
 	instance, err := xray.Start(jsonConfig)
 	if err != nil {
-		return -1, errors.New(err.Message)
+		return []PingResult{}, errors.New(err.Message)
 	}
 
-	proxyUrl, err1 := url.Parse(_localhost + strconv.Itoa(port))
-	if err1 != nil {
-		instance.Close()
+	results := make([]PingResult, 0, len(ports))
+	for _, port := range ports {
+		result := PingResult{Port: port}
+		proxyUrl, err1 := url.Parse(_localhost + strconv.Itoa(port))
+		if err1 != nil {
 
-		return -1, err1
+			result.Error = err1.Error()
+		} else {
+			timeout, err2 := PingProxy(testingURL, proxyUrl)
+
+			result.Error = err2.Error()
+			result.Timeout = timeout
+		}
+
+		results = append(results, result)
 	}
-
-	timeout, err2 := PingProxy(testingURL, proxyUrl)
 
 	instance.Close()
 
-	return timeout, err2
+	return results, nil
 }
 
 func PingProxy(testUrl string, proxyUrl *url.URL) (int, error) {

@@ -1,18 +1,16 @@
 package code_errors
 
 import (
-	"fmt"
-
 	"github.com/VanyaKrotov/xray_cshare/transfer"
 )
 
 type CodeError struct {
-	Code    int
+	Code    uint
 	Message string
 }
 
-func New(message string, codes ...int) *CodeError {
-	code := 1
+func New(message string, codes ...uint) *CodeError {
+	var code uint = 1
 	if len(codes) > 0 {
 		code = codes[0]
 	}
@@ -20,10 +18,6 @@ func New(message string, codes ...int) *CodeError {
 	return &CodeError{Message: message, Code: code}
 }
 
-func (e *CodeError) ToString() string {
-	return fmt.Sprintf("%d|%s", e.Code, e.Message)
-}
-
 func (e *CodeError) ToTransfer() *transfer.Response {
-	return transfer.Failure(e.Message, e.Code)
+	return transfer.Error(e.Message, e.Code)
 }

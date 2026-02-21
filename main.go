@@ -1,13 +1,17 @@
 package main
 
+/*
+#include <stdlib.h>
+#include <string.h>
+*/
 import "C"
 import (
 	"encoding/base64"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/VanyaKrotov/xray_cshare/crypto_helpers"
 	"github.com/VanyaKrotov/xray_cshare/testing"
@@ -27,13 +31,13 @@ func init() {
 }
 
 //export Start
-func Start(cUuid *C.char, cJson *C.char) *C.char {
+func Start(cUuid *C.char, cJson *C.char) unsafe.Pointer {
 	mu.Lock()
 	defer mu.Unlock()
 
 	uuid := C.GoString(cUuid)
 	if instance, ok := instances[uuid]; ok && instance.IsRunning() {
-		return C.CString(transfer.FailureString("Xray server already started", xray.XrayAlreadyStarted))
+		return transfer.Error("Xray server already started", xray.XrayAlreadyStarted).Pack()
 	}
 
 	json := C.GoString(cJson)
@@ -41,14 +45,14 @@ func Start(cUuid *C.char, cJson *C.char) *C.char {
 	if err == nil {
 		instances[uuid] = inst
 
-		return C.CString(transfer.SuccessString("Server started"))
+		return transfer.Ok("Server started").Pack()
 	}
 
-	return C.CString(err.ToTransfer().ToString())
+	return err.ToTransfer().Pack()
 }
 
 //export Stop
-func Stop(cUuid *C.char) *C.char {
+func Stop(cUuid *C.char) {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -57,8 +61,6 @@ func Stop(cUuid *C.char) *C.char {
 		xray.Stop(instance)
 		delete(instances, uuid)
 	}
-
-	return C.CString(transfer.SuccessString("Server stopped"))
 }
 
 //export IsStarted
@@ -75,26 +77,39 @@ func IsStarted(cUuid *C.char) C.int {
 }
 
 //export PingConfig
-func PingConfig(jsonConfig *C.char, port int, testingURL *C.char) *C.char {
+func PingConfig(jsonConfig *C.char, portsPtr *C.int, portsLen C.int, testingURL *C.char) unsafe.Pointer {
 	goJSON := C.GoString(jsonConfig)
 	url := C.GoString(testingURL)
-	ping, err := testing.PingConfig(goJSON, port, url)
-	if err != nil {
-		return C.CString(transfer.FailureString(err.Error()))
+
+	cPorts := unsafe.Slice(portsPtr, portsLen)
+	ports := make([]int, int(portsLen))
+	for i, v := range cPorts {
+		ports[i] = int(v)
 	}
 
-	return C.CString(transfer.SuccessString(strconv.Itoa(ping)))
+	results, err := testing.PingConfig(goJSON, ports, url)
+	if err != nil {
+		return transfer.Error(err.Error()).Pack()
+	}
+
+	return transfer.Payload(results).Pack()
 }
 
 //export Ping
-func Ping(port C.int, testingURL *C.char) *C.char {
+func Ping(port C.int, testingURL *C.char) unsafe.Pointer {
 	url := C.GoString(testingURL)
 	ping, err := testing.Ping(int(port), url)
-	if err != nil {
-		return C.CString(transfer.FailureString(err.Error()))
+
+	result := testing.PingResult{
+		Port:    int(port),
+		Timeout: ping,
 	}
 
-	return C.CString(transfer.SuccessString(strconv.Itoa(ping)))
+	if err != nil {
+		result.Error = err.Error()
+	}
+
+	return transfer.Payload(result).Pack()
 }
 
 //export GetXrayCoreVersion
@@ -103,84 +118,83 @@ func GetXrayCoreVersion() *C.char {
 }
 
 //export Curve25519Genkey
-func Curve25519Genkey(cKey *C.char) *C.char {
+func Curve25519Genkey(cKey *C.char) unsafe.Pointer {
 	key := C.GoString(cKey)
 	result, err := crypto_helpers.Curve25519Genkey(key, base64.RawURLEncoding)
 	if err != nil {
-		return C.CString(transfer.FailureString(err.Error()))
+		return transfer.Error(err.Error()).Pack()
 	}
 
-	return C.CString(transfer.SuccessString(fmt.Sprintf("%s|%s|%s", result.PrivateKey, result.Password, result.Hash32)))
+	return transfer.Payload(result).Pack()
 }
 
 //export Curve25519GenkeyWG
-func Curve25519GenkeyWG(cKey *C.char) *C.char {
+func Curve25519GenkeyWG(cKey *C.char) unsafe.Pointer {
 	key := C.GoString(cKey)
 	result, err := crypto_helpers.Curve25519Genkey(key, base64.StdEncoding)
 	if err != nil {
-		return C.CString(transfer.FailureString(err.Error()))
+		return transfer.Error(err.Error()).Pack()
 	}
 
-	return C.CString(transfer.SuccessString(fmt.Sprintf("%s|%s|%s", result.PrivateKey, result.Password, result.Hash32)))
+	return transfer.Payload(result).Pack()
 }
 
 //export ExecuteUUID
-func ExecuteUUID(cInput *C.char) *C.char {
+func ExecuteUUID(cInput *C.char) unsafe.Pointer {
 	input := C.GoString(cInput)
 	uuid, err := crypto_helpers.ExecuteUUID(input)
 	if err != nil {
-		return C.CString(transfer.FailureString(err.Error()))
+		return transfer.Error(err.Error()).Pack()
 	}
 
-	return C.CString(transfer.Success(uuid).ToString())
+	return transfer.Ok(uuid).Pack()
 }
 
 //export ExecuteMLDSA65
-func ExecuteMLDSA65(cInput *C.char) *C.char {
+func ExecuteMLDSA65(cInput *C.char) unsafe.Pointer {
 	result, err := crypto_helpers.ExecuteMLDSA65(C.GoString(cInput))
 
 	var response *transfer.Response
 	if err == nil {
-		response = transfer.Success(fmt.Sprintf("%s|%s", result.Seed, result.Verify))
+		response = transfer.Payload(result)
 	} else {
-		response = transfer.Failure(err.Error())
+		response = transfer.Error(err.Error())
 	}
 
-	return C.CString(response.ToString())
+	return response.Pack()
 }
 
 //export ExecuteMLKEM768
-func ExecuteMLKEM768(cInput *C.char) *C.char {
+func ExecuteMLKEM768(cInput *C.char) unsafe.Pointer {
 	input := C.GoString(cInput)
 	result, err := crypto_helpers.ExecuteMLKEM768(input)
 
 	var response *transfer.Response
 	if err == nil {
-		response = transfer.Success(fmt.Sprintf("%s|%s|%s", result.Seed, result.Client, result.Hash32))
+		response = transfer.Payload(result)
 	} else {
-		response = transfer.Failure(err.Error())
+		response = transfer.Error(err.Error())
 	}
 
-	return C.CString(response.ToString())
+	return response.Pack()
 }
 
 //export ExecuteVLESSEnc
-func ExecuteVLESSEnc() *C.char {
+func ExecuteVLESSEnc() unsafe.Pointer {
 	result := crypto_helpers.ExecuteVLESSEnc()
-	response := transfer.Success(fmt.Sprintf("%s|%s|%s|%s", result.Decryption, result.Encryption, result.DecryptionPQ, result.EncryptionPQ))
 
-	return C.CString(response.ToString())
+	return transfer.Payload(result).Pack()
 }
 
 //export GenerateCert
-func GenerateCert(cDomains *C.char, cCommonName *C.char, cOrg *C.char, cIsCA C.int, cExpire *C.char) *C.char {
+func GenerateCert(cDomains *C.char, cCommonName *C.char, cOrg *C.char, cIsCA C.int, cExpire *C.char) unsafe.Pointer {
 	expireString := C.GoString(cExpire)
 
 	var expire *time.Duration
 	if len(expireString) > 0 {
 		exp, err := time.ParseDuration(expireString)
 		if err != nil {
-			return C.CString(transfer.Failure(err.Error()).ToString())
+			return transfer.Error(err.Error()).Pack()
 		}
 
 		expire = &exp
@@ -197,26 +211,33 @@ func GenerateCert(cDomains *C.char, cCommonName *C.char, cOrg *C.char, cIsCA C.i
 
 	var response *transfer.Response
 	if err == nil {
-		response = transfer.Success(fmt.Sprintf("%s|%s", strings.Join(result.Certificate, ","), strings.Join(result.Key, ",")))
+		response = transfer.Payload(result)
 	} else {
-		response = transfer.Failure(err.Error())
+		response = transfer.Error(err.Error())
 	}
 
-	return C.CString(response.ToString())
+	return response.Pack()
 }
 
 //export ExecuteCertChainHash
-func ExecuteCertChainHash(cCert *C.char) *C.char {
+func ExecuteCertChainHash(cCert *C.char) unsafe.Pointer {
 	result, err := crypto_helpers.ExecuteCertChainHash(C.GoString(cCert))
 
 	var response *transfer.Response
 	if err == nil {
-		response = transfer.Success(result)
+		response = transfer.Ok(result)
 	} else {
-		response = transfer.Failure(err.Error())
+		response = transfer.Error(err.Error())
 	}
 
-	return C.CString(response.ToString())
+	return response.Pack()
+}
+
+//export FreePointer
+func FreePointer(ptr unsafe.Pointer) {
+	if ptr != nil {
+		C.free(ptr)
+	}
 }
 
 func main() {

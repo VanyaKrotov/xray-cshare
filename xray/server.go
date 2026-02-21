@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	JsonParseError     int = 1
-	LoadConfigError    int = 2
-	InitXrayError      int = 3
-	StartXrayError     int = 4
-	XrayAlreadyStarted int = 5
+	JsonParseError     uint = 1
+	LoadConfigError    uint = 2
+	InitXrayError      uint = 3
+	StartXrayError     uint = 4
+	XrayAlreadyStarted uint = 5
 )
 
 // Start xray server from json config
