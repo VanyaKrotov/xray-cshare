@@ -35,12 +35,14 @@ func PingConfig(jsonConfig string, ports []int, testingURL string) ([]PingResult
 		result := PingResult{Port: port}
 		proxyUrl, err1 := url.Parse(_localhost + strconv.Itoa(port))
 		if err1 != nil {
-
 			result.Error = err1.Error()
 		} else {
 			timeout, err2 := PingProxy(testingURL, proxyUrl)
 
-			result.Error = err2.Error()
+			if err2 != nil {
+				result.Error = err2.Error()
+			}
+
 			result.Timeout = timeout
 		}
 
