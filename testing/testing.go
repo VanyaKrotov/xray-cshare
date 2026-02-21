@@ -16,7 +16,8 @@ const (
 	PingTimeoutError uint = 6
 	PingError        uint = 7
 
-	_localhost string = "http://127.0.0.1:"
+	_tlsTimeout time.Duration = time.Second * 60
+	_localhost  string        = "http://127.0.0.1:"
 )
 
 type PingResult struct {
@@ -62,7 +63,7 @@ func PingConfig(jsonConfig string, ports []int, testingURL string) ([]PingResult
 func PingProxy(testUrl string, proxyUrl *url.URL) (int, error) {
 	defaultTransport := &http.Transport{
 		Proxy:               http.ProxyURL(proxyUrl),
-		TLSHandshakeTimeout: time.Second * 5,
+		TLSHandshakeTimeout: _tlsTimeout,
 		DisableKeepAlives:   true,
 	}
 
@@ -73,7 +74,7 @@ func pingWithTransport(testUrl string, transport *http.Transport) (int, error) {
 	start := time.Now()
 	client := &http.Client{
 		Transport: transport,
-		Timeout:   10 * time.Second,
+		Timeout:   60 * time.Second,
 	}
 	response, err := client.Head(testUrl)
 	if err != nil {
@@ -90,7 +91,7 @@ func pingWithTransport(testUrl string, transport *http.Transport) (int, error) {
 func Ping(port int, testUrl string) (int, error) {
 	if port == 0 {
 		defaultTransport := &http.Transport{
-			TLSHandshakeTimeout: time.Second * 5,
+			TLSHandshakeTimeout: _tlsTimeout,
 			DisableKeepAlives:   true,
 		}
 
