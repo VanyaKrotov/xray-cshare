@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/VanyaKrotov/xray_cshare/xray"
@@ -30,25 +31,29 @@ func PingConfig(jsonConfig string, ports []int, testingURL string) ([]PingResult
 		return []PingResult{}, errors.New(err.Message)
 	}
 
-	results := make([]PingResult, 0, len(ports))
-	for _, port := range ports {
-		result := PingResult{Port: port}
-		proxyUrl, err1 := url.Parse(_localhost + strconv.Itoa(port))
-		if err1 != nil {
-			result.Error = err1.Error()
-		} else {
-			timeout, err2 := PingProxy(testingURL, proxyUrl)
+	results := make([]PingResult, len(ports))
+	var wg sync.WaitGroup
 
-			if err2 != nil {
-				result.Error = err2.Error()
+	for i, port := range ports {
+		wg.Add(1)
+		go func(i int, port int) {
+			defer wg.Done()
+			result := PingResult{Port: port}
+			proxyUrl, err1 := url.Parse(_localhost + strconv.Itoa(port))
+			if err1 != nil {
+				result.Error = err1.Error()
+			} else {
+				timeout, err2 := PingProxy(testingURL, proxyUrl)
+				if err2 != nil {
+					result.Error = err2.Error()
+				}
+				result.Timeout = timeout
 			}
-
-			result.Timeout = timeout
-		}
-
-		results = append(results, result)
+			results[i] = result
+		}(i, port)
 	}
 
+	wg.Wait()
 	instance.Close()
 
 	return results, nil
@@ -66,8 +71,11 @@ func PingProxy(testUrl string, proxyUrl *url.URL) (int, error) {
 
 func pingWithTransport(testUrl string, transport *http.Transport) (int, error) {
 	start := time.Now()
-	http.DefaultTransport = transport
-	response, err := http.Head(testUrl)
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   10 * time.Second,
+	}
+	response, err := client.Head(testUrl)
 	if err != nil {
 		return -1, err
 	}
