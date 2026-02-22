@@ -8,6 +8,7 @@ import "C"
 import (
 	"encoding/base64"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -238,6 +239,16 @@ func FreePointer(ptr unsafe.Pointer) {
 	if ptr != nil {
 		C.free(ptr)
 	}
+}
+
+//export SetEnv
+func SetEnv(cKey, cValue *C.char) *C.char {
+	err := os.Setenv(C.GoString(cKey), C.GoString(cValue))
+	if err != nil {
+		return C.CString(err.Error())
+	}
+
+	return nil
 }
 
 func main() {
