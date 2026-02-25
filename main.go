@@ -114,8 +114,8 @@ func Ping(port C.int, testingURL *C.char) unsafe.Pointer {
 }
 
 //export GetXrayCoreVersion
-func GetXrayCoreVersion() *C.char {
-	return C.CString(core.Version())
+func GetXrayCoreVersion() unsafe.Pointer {
+	return transfer.Ok(core.Version()).Pack()
 }
 
 //export Curve25519Genkey
@@ -242,13 +242,13 @@ func FreePointer(ptr unsafe.Pointer) {
 }
 
 //export SetEnv
-func SetEnv(cKey, cValue *C.char) *C.char {
+func SetEnv(cKey, cValue *C.char) unsafe.Pointer {
 	err := os.Setenv(C.GoString(cKey), C.GoString(cValue))
 	if err != nil {
-		return C.CString(err.Error())
+		return transfer.Error(err.Error()).Pack()
 	}
 
-	return nil
+	return transfer.Ok("done").Pack()
 }
 
 func main() {
