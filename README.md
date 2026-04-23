@@ -467,12 +467,12 @@ Failure:
 
 Underlying `xray-core` calls:
 
-- None directly in `xray-core v26.2.6`
+- None directly in `xray-core v26.3.27`
 
 Notes:
 
 - This wrapper preserves the legacy chain-hash behavior that existed in older `xray-core` versions.
-- In current `xray-core` releases such as `v26.2.6`, upstream exposes leaf-certificate hashing instead of the old chain-hash helper.
+- In current `xray-core` releases such as `v26.3.27`, upstream exposes leaf-certificate hashing instead of the old chain-hash helper.
 
 #### `void* ExecuteLeafCertHash(char* cCert);`
 
@@ -498,7 +498,7 @@ Underlying `xray-core` calls:
 
 Notes:
 
-- In `xray-core v26.2.6`, the leaf hash helper is exposed as certificate-hash generation on parsed certificate data rather than as a PEM-specific helper.
+- In `xray-core v26.3.27`, the leaf hash helper is exposed as certificate-hash generation on parsed certificate data rather than as a PEM-specific helper.
 - For PEM bundles, the first certificate is treated as the leaf certificate, matching the current upstream command behavior.
 
 ### Utility Functions
