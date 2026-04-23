@@ -1,9 +1,12 @@
 package crypto_helpers
 
 import (
+	"bytes"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
+	"errors"
 	"os"
 
 	"github.com/xtls/xray-core/transport/internet/tls"
@@ -40,7 +43,36 @@ func ExecuteLeafCertHash(certPem string) (string, error) {
 		certContent = content
 	}
 
-	return tls.CalculatePEMLeafCertSHA256Hash(certContent)
+	var certs []*x509.Certificate
+	if bytes.Contains(certContent, []byte("BEGIN")) {
+		for {
+			block, remain := pem.Decode(certContent)
+			if block == nil {
+				break
+			}
+
+			cert, err := x509.ParseCertificate(block.Bytes)
+			if err != nil {
+				return "", err
+			}
+
+			certs = append(certs, cert)
+			certContent = remain
+		}
+	} else {
+		parsed, err := x509.ParseCertificates(certContent)
+		if err != nil {
+			return "", err
+		}
+
+		certs = parsed
+	}
+
+	if len(certs) == 0 {
+		return "", errors.New("no certificates found")
+	}
+
+	return tls.GenerateCertHashHex(certs[0]), nil
 }
 
 func pathExists(path string) bool {

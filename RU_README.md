@@ -467,12 +467,12 @@ go build -buildmode=c-shared -o build/xray_sdk.dll
 
 Используемые вызовы `xray-core`:
 
-- Нет прямого вызова в `xray-core v26.1.23`
+- Нет прямого вызова в `xray-core v26.2.6`
 
 Примечания:
 
 - Эта обертка сохраняет legacy-поведение chain-hash, которое существовало в старых версиях `xray-core`.
-- В `xray-core v26.1.23` upstream helper был заменен на API для hash только leaf-certificate.
+- В актуальных версиях `xray-core`, включая `v26.2.6`, upstream использует hash leaf-certificate вместо старого chain-hash helper.
 
 #### `void* ExecuteLeafCertHash(char* cCert);`
 
@@ -494,7 +494,12 @@ go build -buildmode=c-shared -o build/xray_sdk.dll
 
 Используемые вызовы `xray-core`:
 
-- `tls.CalculatePEMLeafCertSHA256Hash(certContent)`
+- `tls.GenerateCertHashHex(certs[0])` после парсинга PEM или DER certificate input
+
+Примечания:
+
+- В `xray-core v26.2.6` leaf hash helper предоставляется как генерация hash для уже распарсенного сертификата, а не как PEM-specific helper.
+- Для PEM bundle leaf-сертификатом считается первый сертификат, что соответствует текущему поведению upstream command.
 
 ### Служебные функции
 
