@@ -447,6 +447,8 @@ Notes:
 
 #### `void* ExecuteCertChainHash(char* cCert);`
 
+Deprecated compatibility API. Calculates a SHA-256 hash for the full PEM certificate chain.
+
 Calculates the SHA-256 hash of a PEM certificate chain using Xray's TLS helper.
 
 Parameters:
@@ -465,7 +467,34 @@ Failure:
 
 Underlying `xray-core` calls:
 
-- `tls.CalculatePEMCertChainSHA256Hash(certContent)`
+- None directly in `xray-core v26.1.23`
+
+Notes:
+
+- This wrapper preserves the legacy chain-hash behavior that existed in older `xray-core` versions.
+- In `xray-core v26.1.23`, the upstream helper was replaced with a leaf-certificate hash API.
+
+#### `void* ExecuteLeafCertHash(char* cCert);`
+
+Calculates the SHA-256 hash of the leaf PEM certificate using the current `xray-core` API.
+
+Parameters:
+
+- `cCert`: either PEM text content or a filesystem path to a PEM file
+
+Success:
+
+- Content type `3`
+- Message body contains the leaf certificate hash string
+
+Failure:
+
+- Content type `1`
+- Error string if the file cannot be read or the PEM certificate cannot be parsed
+
+Underlying `xray-core` calls:
+
+- `tls.CalculatePEMLeafCertSHA256Hash(certContent)`
 
 ### Utility Functions
 
@@ -541,7 +570,8 @@ Some helper functions are not part of the runtime lifecycle, but still depend on
 
 - `ExecuteUUID` uses `github.com/xtls/xray-core/common/uuid`
 - `GenerateCert` uses `github.com/xtls/xray-core/common/protocol/tls/cert`
-- `ExecuteCertChainHash` uses `github.com/xtls/xray-core/transport/internet/tls`
+- `ExecuteLeafCertHash` uses `github.com/xtls/xray-core/transport/internet/tls`
+- `ExecuteCertChainHash` keeps the legacy chain-hash behavior locally for backward compatibility
 - `crypto_helpers/cert.go` also imports `github.com/xtls/xray-core/main/commands/base` for `stringList.Set`
 
 ## Example FFI Workflow
@@ -577,7 +607,9 @@ When decoding a returned pointer:
 - `Ping` returns a payload object even when the request fails; in that case the error is embedded inside the JSON payload.
 - `PingTimeoutError` and `PingError` constants exist in code but are not currently surfaced as dedicated response codes by the exported API.
 - `GenerateCert` should be consumed with caution when `cExpire` is empty, because the current implementation path around default expiry initialization is unsafe as written.
-- `ExecuteCertChainHash` treats its input as a file path if that path exists on disk; otherwise it treats the input as PEM content.
+- `ExecuteCertChainHash` is a deprecated compatibility API that keeps the old full-chain hash behavior even though upstream Xray now exposes a leaf-certificate hash helper.
+- `ExecuteLeafCertHash` matches the current upstream `xray-core` behavior.
+- `ExecuteCertChainHash` and `ExecuteLeafCertHash` treat their input as a file path if that path exists on disk; otherwise they treat the input as PEM content.
 
 ## Source of Truth
 

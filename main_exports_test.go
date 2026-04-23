@@ -174,6 +174,28 @@ func TestExecuteCertChainHash(t *testing.T) {
 	}
 }
 
+func TestExecuteLeafCertHash(t *testing.T) {
+	type certPayload struct {
+		Certificate []string `json:"certificate"`
+	}
+
+	generated := unpackResponse(t, generateCertStrings("example.com", "example.com", "Example Org", 0, "24h"))
+	if generated.Code != 0 {
+		t.Fatalf("failed to generate certificate: %+v", generated)
+	}
+
+	payload := decodeJSONBody[certPayload](t, generated.Body)
+	certPEM := strings.Join(payload.Certificate, "\n") + "\n"
+
+	resp := unpackResponse(t, executeLeafCertHashString(certPEM))
+	if resp.Code != 0 || resp.ContentType != testContentMessage {
+		t.Fatalf("expected successful leaf cert hash response, got %+v", resp)
+	}
+	if resp.Body == "" {
+		t.Fatal("expected non-empty leaf certificate hash")
+	}
+}
+
 func TestSetEnv(t *testing.T) {
 	key := "XRAY_CSHARE_TEST_ENV"
 	t.Cleanup(func() {
@@ -279,6 +301,35 @@ func TestExecuteCertChainHashFromFile(t *testing.T) {
 	resp := unpackResponse(t, executeCertChainHashString(file.Name()))
 	if resp.Code != 0 || resp.ContentType != testContentMessage || resp.Body == "" {
 		t.Fatalf("expected successful cert hash response, got %+v", resp)
+	}
+}
+
+func TestLeafAndChainHashDifferForMultiCertBundle(t *testing.T) {
+	leaf1 := unpackResponse(t, generateCertStrings("leaf1.example", "leaf1.example", "Example Org", 0, "24h"))
+	if leaf1.Code != 0 {
+		t.Fatalf("failed to generate first certificate: %+v", leaf1)
+	}
+	leaf2 := unpackResponse(t, generateCertStrings("leaf2.example", "leaf2.example", "Example Org", 0, "24h"))
+	if leaf2.Code != 0 {
+		t.Fatalf("failed to generate second certificate: %+v", leaf2)
+	}
+
+	type certPayload struct {
+		Certificate []string `json:"certificate"`
+	}
+
+	payload1 := decodeJSONBody[certPayload](t, leaf1.Body)
+	payload2 := decodeJSONBody[certPayload](t, leaf2.Body)
+	bundle := strings.Join(payload1.Certificate, "\n") + "\n" + strings.Join(payload2.Certificate, "\n") + "\n"
+
+	chainResp := unpackResponse(t, executeCertChainHashString(bundle))
+	leafResp := unpackResponse(t, executeLeafCertHashString(bundle))
+
+	if chainResp.Code != 0 || leafResp.Code != 0 {
+		t.Fatalf("expected both hash operations to succeed, got chain=%+v leaf=%+v", chainResp, leafResp)
+	}
+	if chainResp.Body == leafResp.Body {
+		t.Fatalf("expected chain hash and leaf hash to differ for multi-cert bundle, got %q", chainResp.Body)
 	}
 }
 

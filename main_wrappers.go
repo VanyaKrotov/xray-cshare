@@ -125,6 +125,13 @@ func executeCertChainHashString(cert string) unsafe.Pointer {
 	return ExecuteCertChainHash(cCert)
 }
 
+func executeLeafCertHashString(cert string) unsafe.Pointer {
+	cCert := cStringPtr(cert)
+	defer freeCString(cCert)
+
+	return ExecuteLeafCertHash(cCert)
+}
+
 func setEnvStrings(key string, value string) unsafe.Pointer {
 	cKey := cStringPtr(key)
 	defer freeCString(cKey)

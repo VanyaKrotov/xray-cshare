@@ -251,6 +251,20 @@ func ExecuteCertChainHash(cCert *C.char) unsafe.Pointer {
 	return response.Pack()
 }
 
+//export ExecuteLeafCertHash
+func ExecuteLeafCertHash(cCert *C.char) unsafe.Pointer {
+	result, err := crypto_helpers.ExecuteLeafCertHash(C.GoString(cCert))
+
+	var response *transfer.Response
+	if err == nil {
+		response = transfer.Ok(result)
+	} else {
+		response = transfer.Error(err.Error())
+	}
+
+	return response.Pack()
+}
+
 //export FreePointer
 func FreePointer(ptr unsafe.Pointer) {
 	if ptr != nil {

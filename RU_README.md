@@ -447,6 +447,8 @@ go build -buildmode=c-shared -o build/xray_sdk.dll
 
 #### `void* ExecuteCertChainHash(char* cCert);`
 
+Устаревший compatibility API. Вычисляет SHA-256 hash для всей PEM certificate chain.
+
 Вычисляет SHA-256 hash PEM certificate chain с использованием TLS helper из Xray.
 
 Параметры:
@@ -465,7 +467,34 @@ go build -buildmode=c-shared -o build/xray_sdk.dll
 
 Используемые вызовы `xray-core`:
 
-- `tls.CalculatePEMCertChainSHA256Hash(certContent)`
+- Нет прямого вызова в `xray-core v26.1.23`
+
+Примечания:
+
+- Эта обертка сохраняет legacy-поведение chain-hash, которое существовало в старых версиях `xray-core`.
+- В `xray-core v26.1.23` upstream helper был заменен на API для hash только leaf-certificate.
+
+#### `void* ExecuteLeafCertHash(char* cCert);`
+
+Вычисляет SHA-256 hash leaf PEM certificate с использованием текущего API `xray-core`.
+
+Параметры:
+
+- `cCert`: либо PEM-содержимое, либо путь к PEM-файлу в файловой системе
+
+Успех:
+
+- Content type `3`
+- Тело сообщения содержит строку hash leaf certificate
+
+Ошибка:
+
+- Content type `1`
+- Строка ошибки, если файл нельзя прочитать или PEM certificate не удалось распарсить
+
+Используемые вызовы `xray-core`:
+
+- `tls.CalculatePEMLeafCertSHA256Hash(certContent)`
 
 ### Служебные функции
 
@@ -541,7 +570,8 @@ go build -buildmode=c-shared -o build/xray_sdk.dll
 
 - `ExecuteUUID` использует `github.com/xtls/xray-core/common/uuid`
 - `GenerateCert` использует `github.com/xtls/xray-core/common/protocol/tls/cert`
-- `ExecuteCertChainHash` использует `github.com/xtls/xray-core/transport/internet/tls`
+- `ExecuteLeafCertHash` использует `github.com/xtls/xray-core/transport/internet/tls`
+- `ExecuteCertChainHash` сохраняет legacy chain-hash поведение локально ради обратной совместимости
 - `crypto_helpers/cert.go` также импортирует `github.com/xtls/xray-core/main/commands/base` для `stringList.Set`
 
 ## Пример FFI workflow
@@ -577,7 +607,9 @@ Stop("instance-1");
 - `Ping` возвращает payload object даже при ошибке запроса; в этом случае ошибка встраивается в JSON payload.
 - Константы `PingTimeoutError` и `PingError` существуют в коде, но сейчас не отдаются как отдельные response codes через экспортируемый API.
 - `GenerateCert` следует использовать осторожно, если `cExpire` пустой, потому что текущий путь реализации вокруг default expiry initialization небезопасен в текущем виде.
-- `ExecuteCertChainHash` интерпретирует input как путь к файлу, если такой путь существует на диске; иначе input трактуется как PEM-содержимое.
+- `ExecuteCertChainHash` — это устаревший compatibility API, который сохраняет старое поведение full-chain hash, хотя upstream Xray теперь предоставляет helper для leaf-certificate hash.
+- `ExecuteLeafCertHash` соответствует текущему поведению upstream `xray-core`.
+- `ExecuteCertChainHash` и `ExecuteLeafCertHash` интерпретируют input как путь к файлу, если такой путь существует на диске; иначе input трактуется как PEM-содержимое.
 
 ## Источник истины
 
