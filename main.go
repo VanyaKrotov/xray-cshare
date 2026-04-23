@@ -25,29 +25,46 @@ import (
 var (
 	mu        sync.Mutex
 	instances map[string]*core.Instance
+	starting  map[string]struct{}
 )
 
 func init() {
 	instances = make(map[string]*core.Instance)
+	starting = make(map[string]struct{})
 }
 
 //export Start
 func Start(cUuid *C.char, cJson *C.char) unsafe.Pointer {
-	mu.Lock()
-	defer mu.Unlock()
-
 	uuid := C.GoString(cUuid)
-	if instance, ok := instances[uuid]; ok && instance.IsRunning() {
+	json := C.GoString(cJson)
+
+	mu.Lock()
+	if _, ok := starting[uuid]; ok {
+		mu.Unlock()
+
 		return transfer.Error("Xray server already started", xray.XrayAlreadyStarted).Pack()
 	}
 
-	json := C.GoString(cJson)
+	if instance, ok := instances[uuid]; ok && instance.IsRunning() {
+		mu.Unlock()
+
+		return transfer.Error("Xray server already started", xray.XrayAlreadyStarted).Pack()
+	}
+
+	starting[uuid] = struct{}{}
+	mu.Unlock()
+
 	inst, err := xray.Start(json)
+
+	mu.Lock()
+	delete(starting, uuid)
 	if err == nil {
 		instances[uuid] = inst
+		mu.Unlock()
 
 		return transfer.Ok("Server started").Pack()
 	}
+	mu.Unlock()
 
 	return err.ToTransfer().Pack()
 }

@@ -31,6 +31,7 @@ func PingConfig(jsonConfig string, ports []int, testingURL string) ([]PingResult
 	if err != nil {
 		return []PingResult{}, errors.New(err.Message)
 	}
+	defer xray.Stop(instance)
 
 	results := make([]PingResult, len(ports))
 	var wg sync.WaitGroup
@@ -55,7 +56,6 @@ func PingConfig(jsonConfig string, ports []int, testingURL string) ([]PingResult
 	}
 
 	wg.Wait()
-	instance.Close()
 
 	return results, nil
 }

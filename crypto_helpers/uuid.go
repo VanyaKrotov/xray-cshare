@@ -17,7 +17,10 @@ func ExecuteUUID(input string) (string, error) {
 	}
 
 	if l <= 30 {
-		u, _ := uuid.ParseString(input)
+		u, err := uuid.ParseString(input)
+		if err != nil {
+			return "", err
+		}
 
 		return u.String(), nil
 	}

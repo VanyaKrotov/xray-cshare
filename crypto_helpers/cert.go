@@ -55,7 +55,8 @@ type GenCertOptions struct {
 
 func (opt *GenCertOptions) initDefaults() {
 	if opt.Expire == nil {
-		*opt.Expire = time.Hour * 24 * 90
+		expire := time.Hour * 24 * 90
+		opt.Expire = &expire
 	}
 
 	if len(opt.CommonName) == 0 {
