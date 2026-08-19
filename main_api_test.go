@@ -27,6 +27,23 @@ func TestAPIStartStopLifecycle(t *testing.T) {
 	}
 }
 
+func TestAPIStartStopWithGeodataConfig(t *testing.T) {
+	installStateCleanup(t)
+
+	port := reserveTCPPort(t)
+	config := strings.Replace(makeHTTPProxyConfig(port), "\n}", ",\n  \"geodata\": {}\n}", 1)
+
+	resp := unpackResponse(t, startString("api-geodata", config))
+	if resp.Code != 0 || resp.ContentType != testContentMessage || resp.Body != "Server started" {
+		t.Fatalf("expected geodata-enabled server to start, got %+v", resp)
+	}
+
+	stopString("api-geodata")
+	if isStartedString("api-geodata") != 0 {
+		t.Fatal("expected geodata-enabled instance to be stopped")
+	}
+}
+
 func TestAPIStartDuplicateUUID(t *testing.T) {
 	installStateCleanup(t)
 

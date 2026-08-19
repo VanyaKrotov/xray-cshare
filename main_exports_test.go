@@ -12,6 +12,8 @@ import (
 )
 
 func TestGetXrayCoreVersion(t *testing.T) {
+	const expectedVersion = "26.6.27"
+
 	resp := unpackResponse(t, GetXrayCoreVersion())
 	if resp.Code != 0 {
 		t.Fatalf("expected success code, got %d", resp.Code)
@@ -19,8 +21,11 @@ func TestGetXrayCoreVersion(t *testing.T) {
 	if resp.ContentType != testContentMessage {
 		t.Fatalf("expected message content type, got %d", resp.ContentType)
 	}
-	if resp.Body != core.Version() {
-		t.Fatalf("expected version %q, got %q", core.Version(), resp.Body)
+	if core.Version() != expectedVersion {
+		t.Fatalf("expected embedded core version %q, got %q", expectedVersion, core.Version())
+	}
+	if resp.Body != expectedVersion {
+		t.Fatalf("expected exported version %q, got %q", expectedVersion, resp.Body)
 	}
 }
 
